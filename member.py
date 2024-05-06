@@ -2,9 +2,9 @@ from mysql.connector import Error
 
 
 class Member:
-    def __init__(self, name=None, library_card_id=None, fines=None, db=None):
+    def __init__(self, name=None, library_id=None, fines=None, db=None):
         self.__name = name
-        self.__library_card_id = library_card_id
+        self.__library_id = library_id
         self.fines = fines
         self.db = db
 
@@ -13,21 +13,21 @@ class Member:
 
     @staticmethod
     def get_by_library_id(library_id, db):
-        query = 'SELECT * FROM users WHERE library_id = %s'
+        query = 'SELECT id FROM users WHERE library_id = %s'
         result = db.fetch_query(query, (library_id,))
-        return result
+        return result[0][0] if result else None
 
     def save_member(self):
         try:
             query = 'INSERT INTO users (name, library_id, fines) VALUES (%s, %s, %s)'
-            params = (self.__name, self.__library_card_id, self.fines)
-            self.__library_card_id = self.db.execute_query(query, params)
+            params = (self.__name, self.__library_id, self.fines)
+            self.__library_id = self.db.execute_query(query, params)
         except Error as e:
             print(f"Error: '{e}'")
 
     def delete_member(self):
         query = 'DELETE FROM users WHERE library_id = %s'
-        self.db.execute_query(query, (self.__library_card_id,))
+        self.db.execute_query(query, (self.__library_id,))
         return f"{self.__name} deleted."
 
     @staticmethod

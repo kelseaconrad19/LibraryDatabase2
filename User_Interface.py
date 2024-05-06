@@ -66,7 +66,7 @@ def author_operations():
 def book_operations(database=db):
     print("Book Operations:")
     while True:
-        book_menu_choice = input("1. Add a new book\n2. Borrow a book\n3. Return a book\n4. Display all Books\n5. Quit\n")
+        book_menu_choice = input("1. Add a new book\n2. Search for a Book\n3. Borrow a book\n4. Return a book\n5. Display all Books\n6. Quit\n")
         if book_menu_choice == "1":  # Add a new book
             title = input("Enter the title of the book: ")
             author_id = input("Enter the author id: ")
@@ -79,7 +79,14 @@ def book_operations(database=db):
                 print("Book added successfully.")
             except Error as e:
                 print(f"Error: {e}")
-        elif book_menu_choice == "2":  # Borrow a book
+        elif book_menu_choice == "2":  # Search for a book
+            title = input("Enter the title of the book you want to search for: ")
+            book = Book.get_by_title(title, database)
+            if book.availability:
+                print(f"{book.title} is available.")
+            else:
+                print(f"{book.title} is not available.")
+        elif book_menu_choice == "3":  # Borrow a book
             # Change the availability of the book to False and assign the book to the member; update the database.
             title = input("Enter the title of the book you want to borrow: ")
             book = Book.get_by_title(title, database)
@@ -88,7 +95,7 @@ def book_operations(database=db):
                 book.check_out_book(member_id)
             else:
                 print(f"{title} not found.")
-        elif book_menu_choice == "3":  # Return a book
+        elif book_menu_choice == "4":  # Return a book
             title = input("Enter the title of the book you want to return: ")
             book = Book.get_by_title(title, database)
             print(book.title, book.member)
@@ -97,7 +104,10 @@ def book_operations(database=db):
                 book.return_book(member_id)
             else:
                 print(f"{title} not found.")
-        elif book_menu_choice == "4":  # Quit
+        elif book_menu_choice == "5":  # Display all Books
+            Book.display_all_books(database)
+
+        elif book_menu_choice == "6":  # Quit
             break
         else:
             print("Invalid choice. Please try again.")
