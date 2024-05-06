@@ -29,12 +29,11 @@ class Book:
     def check_out_book(self, member_id):
         if self.availability:
             self.set_availability(False)
-            # member = Member.get_by_library_id(member_id, self.db)
-            self.member = member_id
+            user_id = Member.get_by_library_id(member_id, self.db)  # 2
+            self.member = user_id  # 2
             query = 'UPDATE books SET availability = %s, member = %s WHERE isbn = %s'
-            params = (self.availability, member_id, self.ISBN)
+            params = (self.availability, self.member, self.ISBN)  # False, 2, 123456789
             self.db.execute_query(query, params)
-            user_id = Member.get_by_library_id(member_id, self.db)
             # add book to borrowed books table
             query = 'INSERT INTO borrowed_books (book_isbn, user_id, borrow_date, return_date) VALUES (%s, %s, %s, %s)'
             borrowed_date = datetime.now().strftime('%Y-%m-%d')
@@ -67,20 +66,20 @@ class Book:
         else:
             print("No return date found for the book.")
 
-    def return_book(self, member_id):
+    def return_book(self, member_id):  # 1234
         # check if the book is borrowed by the member
-        user_id = Member.get_by_library_id(member_id, self.db)
+        user_id = Member.get_by_library_id(member_id, self.db)  # 2
         print(f"user_id: {user_id}, self.member: {self.member}")  # Debugging line
-        # if self.member == user_id:
-        #     # check if the book is overdue
-        #     self.check_if_overdue()
-        #     self.set_availability(True)
-        #     self.remove_from_borrowed_books(member_id)
-        #     self.member = 'None'
-        #     self.update_book_after_return()
-        #     print(f"{self.title} has been returned.")
-        # else:
-        #     print(f"{self.title} is not borrowed by {member_id}. User id: {user_id}")
+        if int(self.member) == user_id:
+            # check if the book is overdue
+            # self.check_if_overdue()
+            self.set_availability(True)
+            self.remove_from_borrowed_books(member_id)
+            self.member = 'None'
+            self.update_book_after_return()
+            print(f"{self.title} has been returned.")
+        else:
+            print(f"{self.title} is not borrowed by {member_id}. User id: {user_id}")
 
     def set_availability(self, availability):
         self.availability = availability
@@ -102,21 +101,38 @@ class Book:
 
     @staticmethod
     def display_all_books(db):
+        # query = """
+        # SELECT books.title, authors.name AS author_name, books.isbn, genres.name AS genre_name, users.name AS user_name, books.member
+        # FROM books
+        # INNER JOIN authors ON books.author_id = authors.id
+        # INNER JOIN genres ON books.genre_id = genres.id
+        # INNER JOIN users ON books.member = users.id
+        # """
         query = """
-        SELECT books.title, authors.name, books.isbn, genres.name, users.name, books.member
+        SELECT books.title, authors.name AS author_name, books.isbn, genres.name AS genre_name, users.name AS user_name, books.member
         FROM books
-        INNER JOIN authors ON books.author_id = authors.id
-        INNER JOIN genres ON books.genre_id = genres.id
-        INNER JOIN users ON books.member = users.id
+        LEFT JOIN authors ON books.author_id = authors.id
+        LEFT JOIN genres ON books.genre_id = genres.id
+        LEFT JOIN users ON books.member = users.id
         """
         books = db.fetch_query(query)
-        if books:
-            for book in books:
-                if book[5] == '1':
-                    availability = 'Available'
-                    print(f"Title: {book[0]}\nAuthor: {book[1]}\nISBN: {book[2]}\nGenre: {book[3]}\nAvailability: {availability}\nMember: {book[4]}\n")
-                else:
-                    availability = 'Not Available'
-                    print(f"Title: {book[0]}\nAuthor: {book[1]}\nISBN: {book[2]}\nGenre: {book[3]}\nAvailability: {availability}\nMember: {book[4]}\n")
-        else:
-            print("No books found.")
+        print(books)
+        for book in books:
+            if book[5] == '1':
+                availability = 'Available'
+                print(f"Title: {book[0]}\nAuthor: {book[1]}\nISBN: {book[2]}\nGenre: {book[3]}\nAvailability: {availability}\nMember: {book[4]}\n")
+            elif book[5] == 'None' or book[5] == '0':
+                availability = 'Not Available'
+                print(f"Title: {book[0]}\nAuthor: {book[1]}\nISBN: {book[2]}\nGenre: {book[3]}\nAvailability: {availability}\nMember: {book[4]}\n")
+    # else:
+    #     print("No books found.")
+
+    def delete_book(self):
+        # First, delete the entries in the borrowed_books table that reference this book's isbn
+        delete_borrowed_books_query = 'DELETE FROM borrowed_books WHERE book_isbn = %s'
+        self.db.execute_query(delete_borrowed_books_query, (self.ISBN,))
+
+        # Then, delete the book from the books table
+        delete_book_query = 'DELETE FROM books WHERE isbn = %s'
+        self.db.execute_query(delete_book_query, (self.ISBN,))
+        return f"{self.title} deleted."

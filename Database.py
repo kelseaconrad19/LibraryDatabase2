@@ -38,7 +38,7 @@ class Database:
             return result
         except Error as e:
             print(f"Error: '{e}'")
-        return None
+            return []  # Return an empty list on error
 
     def close(self):
         if self.connection.is_connected():
